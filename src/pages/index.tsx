@@ -1,9 +1,35 @@
 import Head from "next/head";
 import Link from "next/link";
+import React from "react";
 import { api } from "~/utils/api";
 
 export default function Home() {
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
+  const {
+    data,
+    isFetching,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    hasNextPage, 
+    fetchNextPage,
+  } = api.example.infiniteProducts.useInfiniteQuery(
+    {
+        limit: 10
+    },
+    {
+        getNextPageParam: (lastPage) =>  lastPage.nextCursor ,
+        // initialCursor: 1,
+    });
+
+  const loadMoreProducts = async () => {
+    try {
+      const updatedProducts = await fetchNextPage()
+      console.log("updatedProducts>>>", updatedProducts.data)
+    } catch (error) {
+      console.log("error>>>", error)
+    }
+  }
 
   return (
     <>
@@ -44,6 +70,19 @@ export default function Home() {
           <p className="text-2xl text-white">
             {hello.data ? hello.data.greeting : "Loading tRPC query..."}
           </p>
+          <div className="text-2xl text-white">
+            {isFetching ? "Fetching tRPC query..." : null}
+            {isFetchingNextPage ? "Fetching next page..." : null}
+            {isLoading ? "Loading tRPC query..." : null}
+            {isError ? "Error loading tRPC query" : null}
+            {
+              // bear with me, this is just to show the data
+              data?.pages[data?.pages.length-1]?.products.map(
+                (product) => <p key={product.id}>{ product.title }</p>
+              )
+            }
+          </div>
+          {hasNextPage ? <button className="text-2xl text-white" onClick={() => void loadMoreProducts()}>Load More</button> : null}
         </div>
       </main>
     </>
